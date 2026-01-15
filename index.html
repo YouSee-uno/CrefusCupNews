@@ -8,8 +8,10 @@
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <style>
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.4);
-            --glass-border: rgba(255, 255, 255, 0.5);
+            /* 背景を完全に不透明な白に設定 */
+            --table-bg: #ffffff;
+            --header-bg: #f2f2f2;
+            --border-color: #dddddd;
         }
 
         body {
@@ -20,18 +22,19 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            color: #333;
+            color: #000000; /* 文字を完全な黒に */
             padding: 20px 10px;
             box-sizing: border-box;
         }
 
         h1 {
             color: #ffffff;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
             margin-bottom: 20px;
-            font-size: clamp(1.2rem, 5vw, 2rem);
+            font-size: clamp(1.2rem, 5vw, 1.8rem);
         }
 
+        /* タブコンテナ */
         .tab-container {
             display: flex;
             flex-wrap: wrap;
@@ -42,72 +45,74 @@
         }
 
         .tab-button {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.5);
             color: white;
-            padding: 8px 14px;
+            padding: 8px 16px;
             border-radius: 30px;
             cursor: pointer;
             font-size: 0.85rem;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
+            transition: all 0.2s ease;
         }
 
         .tab-button.active {
             background: white;
-            color: #56ab2f;
+            color: #458a25;
             font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
-        /* テーブルコンテナ */
-        #table_wrapper {
+        /* --- テーブル全体のコンテナ --- */
+        .scroll-container {
             width: 100%;
             max-width: 800px;
-            background: var(--glass-bg); 
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 20px; 
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
-            padding: 10px;
-            box-sizing: border-box;
-            /* ヘッダー固定のために重要 */
-            overflow: hidden; 
+            height: 70vh;
+            overflow-y: auto;
+            background: var(--table-bg); /* 完全な白 */
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
         }
 
-        /* Google Table スタイル調整（ヘッダー固定用） */
-        .google-visualization-table-table {
-            background-color: transparent !important;
-            color: #000000 !important;
-            border: none !important;
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            text-align: center;
         }
-        
-        /* ヘッダーの固定設定 */
-        .google-visualization-table-tr-head {
-            position: sticky !important;
+
+        /* タイトル部分（ヘッダー）の固定 */
+        thead th {
+            position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 20;
+            background: var(--header-bg);
+            color: #000000;
+            padding: 18px 10px;
+            font-weight: bold;
+            border-bottom: 2px solid #bbb;
         }
 
-        .google-visualization-table-th {
-            background-color: rgba(255, 255, 255, 0.6) !important; /* 背景を少し濃くして文字を読みやすく */
-            color: #000000 !important;
-            font-weight: bold !important;
-            padding: 12px 8px !important;
-            border-bottom: 2px solid rgba(0, 0, 0, 0.1) !important;
+        /* データ部分 */
+        tbody td {
+            padding: 15px 10px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 1.1rem;
+            color: #000000;
+            background-color: #ffffff; /* 行の背景も白に固定 */
         }
 
-        .google-visualization-table-td {
-            background-color: transparent !important;
-            padding: 12px 8px !important;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+        /* 1位〜3位の強調（不透明な色で設定） */
+        tr:nth-child(1) td { background-color: #fff4b0 !important; font-weight: bold; } /* ゴールド */
+        tr:nth-child(2) td { background-color: #f0f0f0 !important; } /* シルバー */
+        tr:nth-child(3) td { background-color: #f9e8d9 !important; } /* ブロンズ */
+
+        /* ロード中メッセージ */
+        .loading {
+            padding: 40px;
+            text-align: center;
+            font-weight: bold;
         }
-
-        /* 順位別の強調 */
-        tr:nth-child(1) .google-visualization-table-td { background-color: rgba(255, 215, 0, 0.3) !important; font-weight: bold; }
-        tr:nth-child(2) .google-visualization-table-td { background-color: rgba(215, 215, 215, 0.3) !important; }
-        tr:nth-child(3) .google-visualization-table-td { background-color: rgba(205, 127, 50, 0.2) !important; }
-
     </style>
 </head>
 <body>
@@ -124,8 +129,20 @@
         <button class="tab-button" onclick="switchTab('m3', this)">M3</button>
     </div>
     
-    <div id="table_wrapper">
-        <div id="table_div">データを読み込み中...</div>
+    <div class="scroll-container">
+        <table id="result_table">
+            <thead>
+                <tr>
+                    <th>順位</th>
+                    <th>選手番号</th>
+                    <th>最高点</th>
+                    <th>クリアタイム</th>
+                </tr>
+            </thead>
+            <tbody id="table_body">
+                <tr><td colspan="4" class="loading">データを取得中...</td></tr>
+            </tbody>
+        </table>
     </div>
 
     <script type="text/javascript">
@@ -142,47 +159,49 @@
         const range = 'B4:E28'; 
         let currentCourse = 'bronze';
 
-        google.charts.load('current', {'packages':['table']});
-        google.charts.setOnLoadCallback(drawTable);
+        google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(fetchData);
 
         function switchTab(courseKey, element) {
             currentCourse = courseKey;
             const buttons = document.querySelectorAll('.tab-button');
             buttons.forEach(btn => btn.classList.remove('active'));
             element.classList.add('active');
-            drawTable();
+            
+            document.getElementById('table_body').innerHTML = `<tr><td colspan="4" class="loading">読み込み中...</td></tr>`;
+            fetchData();
         }
 
-        function drawTable() {
+        function fetchData() {
             const id = spreadsheetIds[currentCourse];
             const query = new google.visualization.Query(
                 `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?range=${range}`
             );
-            query.send(handleQueryResponse);
+            query.send(handleResponse);
         }
 
-        function handleQueryResponse(response) {
+        function handleResponse(response) {
             if (response.isError()) {
-                document.getElementById('table_div').innerHTML = `<div style="padding:20px; text-align:center;">データ取得エラー</div>`;
+                document.getElementById('table_body').innerHTML = `<tr><td colspan="4" class="loading">エラー: スプレッドシートの公開設定を確認してください</td></tr>`;
                 return;
             }
             const data = response.getDataTable();
-            data.setColumnLabel(0, '順位');
-            data.setColumnLabel(1, '選手番号');
-            data.setColumnLabel(2, '最高点');
-            data.setColumnLabel(3, 'タイム');
+            const rowCount = data.getNumberOfRows();
+            let html = "";
 
-            const table = new google.visualization.Table(document.getElementById('table_div'));
-            
-            table.draw(data, { 
-                showRowNumber: false, 
-                width: '100%', 
-                height: '65vh', // 画面の高さの65%に固定し、スクロール可能に
-                allowHtml: true 
-            });
+            for (let i = 0; i < rowCount; i++) {
+                html += "<tr>";
+                html += `<td>${data.getFormattedValue(i, 0)}</td>`;
+                html += `<td>${data.getFormattedValue(i, 1)}</td>`;
+                html += `<td>${data.getFormattedValue(i, 2)}</td>`;
+                html += `<td>${data.getFormattedValue(i, 3)}</td>`;
+                html += "</tr>";
+            }
+            document.getElementById('table_body').innerHTML = html;
         }
 
-        setInterval(drawTable, 30000);
+        // 30秒ごとに自動更新
+        setInterval(fetchData, 30000);
     </script>
 </body>
 </html>
