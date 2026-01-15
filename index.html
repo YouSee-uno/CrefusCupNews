@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrefusCup 順位速報</title>
+    <link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.5);
+        }
+
+        body {
+            background: linear-gradient(135deg, #a8e063 0%, #56ab2f 100%);
+            font-family: 'BIZ UDGothic', sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+            padding: 20px 10px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            font-size: clamp(1.2rem, 5vw, 2rem);
+        }
+
+        /* タブメニュー */
+        .tab-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            max-width: 800px;
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #56ab2f;
+            font-weight: bold;
+        }
+
+        /* テーブルコンテナ */
+        #table_wrapper {
+            width: 100%;
+            max-width: 800px;
+            background: var(--glass-bg); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px; 
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            box-sizing: border-box;
+            overflow-x: auto;
+        }
+
+        #table_div {
+            width: 100%;
+            min-width: 450px;
+        }
+
+        /* Google Table スタイル */
+        .google-visualization-table-table { background-color: transparent !important; color: #000000 !important; border: none !important; }
+        .google-visualization-table-th { background-color: rgba(255, 255, 255, 0.2) !important; color: #000000 !important; font-weight: bold !important; padding: 12px 8px !important; }
+        .google-visualization-table-td { background-color: transparent !important; padding: 12px 8px !important; border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important; }
+        
+        /* 1位〜3位の強調 */
+        tr:nth-child(1) .google-visualization-table-td { background-color: rgba(255, 215, 0, 0.3) !important; font-weight: bold; }
+        tr:nth-child(2) .google-visualization-table-td { background-color: rgba(215, 215, 215, 0.3) !important; }
+        tr:nth-child(3) .google-visualization-table-td { background-color: rgba(205, 127, 50, 0.2) !important; }
+    </style>
+</head>
+<body>
+
+    <h1>🏆 CrefusCup 順位速報</h1>
+    
+    <div class="tab-container">
+        <button class="tab-button active" onclick="switchTab('bronze', this)">ブロンズ</button>
+        <button class="tab-button" onclick="switchTab('silver', this)">シルバー</button>
+        <button class="tab-button" onclick="switchTab('platinum', this)">プラチナ</button>
+        <button class="tab-button" onclick="switchTab('m2spike', this)">M2 SPIKE</button>
+        <button class="tab-button" onclick="switchTab('m2ev3', this)">M2 EV3</button>
+        <button class="tab-button" onclick="switchTab('m3', this)">M3</button>
+    </div>
+    
+    <div id="table_wrapper">
+        <div id="table_div">データを読み込み中...</div>
+    </div>
+
+    <script type="text/javascript">
+        // 各コースのシートID設定
+        const spreadsheetIds = {
+            'bronze': '1k2Gdgpl1BojoH9FB2x4_kvJfYPrqRDWAWpmKlLKf7_w',
+            'silver': '1InuKN189VS-mClhAM1vsYU2NE5QFq8_Mut3mp1tQkkE',
+            'platinum': '1AG7oRVh5_de9JcWl9Mcw7qWWtka8Dsc9fv43O7f54PM',
+            'm2spike': '1CBarwg3feFZrW8HLY6D2sVzzEU2QoVmyas0qYJFByJU',
+            'm2ev3': '1pubGzi3MIBKK6fLFD6kkgBsFAHRQPHqkHdq2SJDM35g',
+            'm3': '1ZkjPfGBQ47ih1-eIhp-45ThnAbctC4ROvWFuPyIdZEc'
+        };
+
+        const range = 'B4:E28'; 
+        let currentCourse = 'bronze';
+
+        google.charts.load('current', {'packages':['table']});
+        google.charts.setOnLoadCallback(drawTable);
+
+        function switchTab(courseKey, element) {
+            currentCourse = courseKey;
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            drawTable();
+        }
+
+        function drawTable() {
+            const id = spreadsheetIds[currentCourse];
+            const query = new google.visualization.Query(
+                `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?range=${range}`
+            );
+            query.send(handleQueryResponse);
+        }
+
+        function handleQueryResponse(response) {
+            if (response.isError()) {
+                document.getElementById('table_div').innerHTML = 
+                    `<div style="padding:20px; text-align:center;">
+                        データの取得に失敗しました。<br>
+                        スプレッドシートの「共有」設定が「リンクを知っている全員」になっているか確認してください。
+                    </div>`;
+                return;
+            }
+            const data = response.getDataTable();
+            data.setColumnLabel(0, '順位');
+            data.setColumnLabel(1, '選手番号');
+            data.setColumnLabel(2, '最高点');
+            data.setColumnLabel(3, 'タイム');
+
+            const table = new google.visualization.Table(document.getElementById('table_div'));
+            table.draw(data, { showRowNumber: false, width: '100%', height: 'auto', allowHtml: true });
+        }
+
+        setInterval(drawTable, 30000);
+    </script>
+</body>
+</html>
