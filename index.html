@@ -32,13 +32,12 @@
             font-size: clamp(1.2rem, 5vw, 2rem);
         }
 
-        /* タブメニュー */
         .tab-container {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 8px;
-            max-width: 800px;
+            max-width: 900px;
             margin-bottom: 20px;
         }
 
@@ -46,10 +45,10 @@
             background: rgba(255, 255, 255, 0.2);
             border: 1px solid var(--glass-border);
             color: white;
-            padding: 10px 16px;
+            padding: 8px 14px;
             border-radius: 30px;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             transition: all 0.3s ease;
             backdrop-filter: blur(5px);
         }
@@ -72,23 +71,43 @@
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
             padding: 10px;
             box-sizing: border-box;
-            overflow-x: auto;
+            /* ヘッダー固定のために重要 */
+            overflow: hidden; 
         }
 
-        #table_div {
-            width: 100%;
-            min-width: 450px;
+        /* Google Table スタイル調整（ヘッダー固定用） */
+        .google-visualization-table-table {
+            background-color: transparent !important;
+            color: #000000 !important;
+            border: none !important;
         }
-
-        /* Google Table スタイル */
-        .google-visualization-table-table { background-color: transparent !important; color: #000000 !important; border: none !important; }
-        .google-visualization-table-th { background-color: rgba(255, 255, 255, 0.2) !important; color: #000000 !important; font-weight: bold !important; padding: 12px 8px !important; }
-        .google-visualization-table-td { background-color: transparent !important; padding: 12px 8px !important; border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important; }
         
-        /* 1位〜3位の強調 */
+        /* ヘッダーの固定設定 */
+        .google-visualization-table-tr-head {
+            position: sticky !important;
+            top: 0;
+            z-index: 10;
+        }
+
+        .google-visualization-table-th {
+            background-color: rgba(255, 255, 255, 0.6) !important; /* 背景を少し濃くして文字を読みやすく */
+            color: #000000 !important;
+            font-weight: bold !important;
+            padding: 12px 8px !important;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .google-visualization-table-td {
+            background-color: transparent !important;
+            padding: 12px 8px !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+        }
+
+        /* 順位別の強調 */
         tr:nth-child(1) .google-visualization-table-td { background-color: rgba(255, 215, 0, 0.3) !important; font-weight: bold; }
         tr:nth-child(2) .google-visualization-table-td { background-color: rgba(215, 215, 215, 0.3) !important; }
         tr:nth-child(3) .google-visualization-table-td { background-color: rgba(205, 127, 50, 0.2) !important; }
+
     </style>
 </head>
 <body>
@@ -98,6 +117,7 @@
     <div class="tab-container">
         <button class="tab-button active" onclick="switchTab('bronze', this)">ブロンズ</button>
         <button class="tab-button" onclick="switchTab('silver', this)">シルバー</button>
+        <button class="tab-button" onclick="switchTab('gold', this)">ゴールド</button>
         <button class="tab-button" onclick="switchTab('platinum', this)">プラチナ</button>
         <button class="tab-button" onclick="switchTab('m2spike', this)">M2 SPIKE</button>
         <button class="tab-button" onclick="switchTab('m2ev3', this)">M2 EV3</button>
@@ -109,10 +129,10 @@
     </div>
 
     <script type="text/javascript">
-        // 各コースのシートID設定
         const spreadsheetIds = {
             'bronze': '1k2Gdgpl1BojoH9FB2x4_kvJfYPrqRDWAWpmKlLKf7_w',
             'silver': '1InuKN189VS-mClhAM1vsYU2NE5QFq8_Mut3mp1tQkkE',
+            'gold': '1ZIZKXQGa4XCodWRUTc55DZ1o4xFUsQflaU-x5vo90bI',
             'platinum': '1AG7oRVh5_de9JcWl9Mcw7qWWtka8Dsc9fv43O7f54PM',
             'm2spike': '1CBarwg3feFZrW8HLY6D2sVzzEU2QoVmyas0qYJFByJU',
             'm2ev3': '1pubGzi3MIBKK6fLFD6kkgBsFAHRQPHqkHdq2SJDM35g',
@@ -143,11 +163,7 @@
 
         function handleQueryResponse(response) {
             if (response.isError()) {
-                document.getElementById('table_div').innerHTML = 
-                    `<div style="padding:20px; text-align:center;">
-                        データの取得に失敗しました。<br>
-                        スプレッドシートの「共有」設定が「リンクを知っている全員」になっているか確認してください。
-                    </div>`;
+                document.getElementById('table_div').innerHTML = `<div style="padding:20px; text-align:center;">データ取得エラー</div>`;
                 return;
             }
             const data = response.getDataTable();
@@ -157,7 +173,13 @@
             data.setColumnLabel(3, 'タイム');
 
             const table = new google.visualization.Table(document.getElementById('table_div'));
-            table.draw(data, { showRowNumber: false, width: '100%', height: 'auto', allowHtml: true });
+            
+            table.draw(data, { 
+                showRowNumber: false, 
+                width: '100%', 
+                height: '65vh', // 画面の高さの65%に固定し、スクロール可能に
+                allowHtml: true 
+            });
         }
 
         setInterval(drawTable, 30000);
